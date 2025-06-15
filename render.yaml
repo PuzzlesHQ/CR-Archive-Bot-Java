@@ -1,11 +1,4 @@
 services:
   - type: web
     name: cr-archive-bot
-    env: docker
-    plan: free
-    buildCommand: ./gradlew shadowJar
-    startCommand: bash start.sh
-    envVars:
-      - key: JAVA_VERSION
-        value: 17
     autoDeploy: true
