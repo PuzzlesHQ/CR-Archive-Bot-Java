@@ -2,24 +2,25 @@ package dev.puzzleshq;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import okhttp3.*;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.IOException;
-import java.security.PrivateKey;
-import java.security.Security;
-import java.security.interfaces.RSAPrivateKey;
-import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-
-import java.io.FileReader;
-
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
 import org.bouncycastle.pkcs.PKCS8EncryptedPrivateKeyInfo;
+import org.hjson.JsonArray;
+import org.hjson.JsonObject;
+import org.hjson.JsonValue;
+
+import java.io.FileReader;
+import java.io.IOException;
+import java.security.PrivateKey;
+import java.security.Security;
+import java.security.interfaces.RSAPrivateKey;
+import java.time.Instant;
 
 public class TokenFetcher {
     private static final String APP_ID = "1399684";
@@ -27,7 +28,6 @@ public class TokenFetcher {
     private static final String GITHUB_API = "https://api.github.com";
 
     private static final OkHttpClient client = new OkHttpClient();
-    private static final ObjectMapper json = new ObjectMapper();
 
     public static String getToken() throws Exception {
         RSAPrivateKey privateKey = (RSAPrivateKey) loadPrivateKey(PRIVATE_KEY_PATH);
@@ -54,16 +54,15 @@ public class TokenFetcher {
 
             assert response.body() != null;
             String body = response.body().string();
-            List<Map<String, Object>> installations = json.readValue(
-                    body,
-                    json.getTypeFactory().constructCollectionType(List.class, Map.class)
-            );
+            JsonArray installations = JsonValue.readHjson(body).asArray();
 
             if (installations.isEmpty()) {
                 throw new IllegalStateException("No installations found. Did you install the app?");
             }
 
-            int installationId = (Integer) installations.getFirst().get("id");
+            JsonObject first = installations.get(0).asObject();
+            int installationId = first.getInt("id", -1);
+            if (installationId == -1) throw new IllegalStateException("No installation id found");
 
             // === Exchange JWT for installation token ===
             Request accessTokenRequest = new Request.Builder()
@@ -77,8 +76,11 @@ public class TokenFetcher {
                 if (!accessTokenResponse.isSuccessful()) {
                     throw new IOException("Access token request failed: " + accessTokenResponse.code());
                 }
-                Map<String, Object> tokenResponse = json.readValue(accessTokenResponse.body().string(), Map.class);
-                return (String) tokenResponse.get("token");
+
+                assert accessTokenResponse.body() != null;
+                String accessBody = accessTokenResponse.body().string();
+                JsonObject tokenObj = JsonValue.readHjson(accessBody).asObject();
+                return tokenObj.getString("token", null);
             }
         }
     }
@@ -90,19 +92,15 @@ public class TokenFetcher {
             Object object = pemParser.readObject();
             JcaPEMKeyConverter converter = new JcaPEMKeyConverter().setProvider("BC");
 
-            if (object instanceof PEMKeyPair keyPair) {
-                return converter.getKeyPair(keyPair).getPrivate();
-
-            } else if (object instanceof org.bouncycastle.asn1.pkcs.PrivateKeyInfo privateKeyInfo) {
-                return converter.getPrivateKey(privateKeyInfo);
-
-            } else if (object instanceof PKCS8EncryptedPrivateKeyInfo encInfo) {
-                // Uncomment and add password handling if encrypted
-                throw new UnsupportedOperationException("Encrypted keys not supported in this example");
-
-            } else {
-                throw new IllegalArgumentException("Unsupported key format: " + object.getClass());
-            }
+            // Uncomment and add password handling if encrypted
+            return switch (object) {
+                case PEMKeyPair keyPair -> converter.getKeyPair(keyPair).getPrivate();
+                case org.bouncycastle.asn1.pkcs.PrivateKeyInfo privateKeyInfo ->
+                        converter.getPrivateKey(privateKeyInfo);
+                case PKCS8EncryptedPrivateKeyInfo encInfo ->
+                        throw new UnsupportedOperationException("Encrypted keys not supported in this example");
+                default -> throw new IllegalArgumentException("Unsupported key format: " + object.getClass());
+            };
         }
     }
 }

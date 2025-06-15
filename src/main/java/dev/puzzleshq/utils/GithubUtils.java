@@ -1,7 +1,7 @@
 package dev.puzzleshq.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hjson.JsonObject;
+import org.hjson.JsonValue;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -24,9 +24,8 @@ public class GithubUtils {
             throw new RuntimeException("Failed to fetch release: " + response.statusCode());
         }
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode json = mapper.readTree(response.body());
-        return ( asTitle ? json.get("name").asText() : json.get("tag_name").asText() ); // or "name" depending on format
+        JsonObject json = JsonValue.readJSON(response.body()).asObject();
+        return ( asTitle ? json.get("name").asString() : json.get("tag_name").asString() ); // or "name" depending on format
     }
 
     public static String fetchLatestRelease() throws Exception {

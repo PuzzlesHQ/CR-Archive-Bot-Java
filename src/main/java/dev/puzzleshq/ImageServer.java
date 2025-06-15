@@ -1,5 +1,6 @@
 package dev.puzzleshq;
 
+import io.javalin.Javalin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,8 +9,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import static dev.puzzleshq.utils.GithubUtils.fetchLatestRelease;
-
-import io.javalin.Javalin;
 
 public class ImageServer {
     private static final Logger imageServerLogger = LoggerFactory.getLogger("ImageServer");

@@ -1,32 +1,36 @@
 package dev.puzzleshq;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.puzzleshq.utils.GithubUtils;
+import dev.puzzleshq.utils.HJsonUtils;
 import dev.puzzleshq.utils.ItchUtils;
+import okhttp3.*;
+import org.hjson.JsonArray;
+import org.hjson.JsonObject;
+import org.hjson.JsonValue;
+import org.hjson.Stringify;
 import org.jetbrains.annotations.NotNull;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.time.Instant;
-import java.util.*;
-
 import java.io.*;
 import java.net.URI;
-import java.net.http.*;
-import java.nio.file.*;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.*;
 import java.util.stream.Stream;
-import java.util.zip.*;
-
-import okhttp3.*;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.*;
-import org.jsoup.select.Elements;
-
-import java.io.IOException;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import static dev.puzzleshq.Main.*;
 import static dev.puzzleshq.utils.FileUtils.calculateFileHash;
@@ -38,7 +42,6 @@ public class Bot {
     private static final Integer maxRetries = 5;
 
     private static final OkHttpClient httpClient = new OkHttpClient();
-    private static final ObjectMapper json = new ObjectMapper();
 
     private static final String RSS_URL = "https://finalforeach.itch.io/cosmic-reach/devlog.rss";
     private static final String USER_AGENT = "Mozilla/5.0";
@@ -76,22 +79,25 @@ public class Bot {
                 createRelease(ItchUtils.fetchLatestItchVersion(), filesToUpload);
             }
 
-        } else {botLogger.info("Versions match");}
+        } else {
+            botLogger.info("Versions match");
+        }
     }
 
     public static void createRelease(String version, Map<String, String> filesDict) throws Exception {
         String changelog = fetchChangelog(version);
 
         // Step 1: Get branch SHA
-        JsonNode refRes = makeRequestWithRetries("GET",
+        JsonObject  refRes = makeRequestWithRetries("GET",
                 "https://api.github.com/repos/" + GITHUB_REPO + "/git/refs/heads/" + GITHUB_BRANCH,
                 null, 3);
-        String baseSha = refRes.get("object").get("sha").asText();
+        JsonObject objectNode = refRes.get("object").asObject();
+        String baseSha = objectNode.get("sha").asString();
 
-        JsonNode baseTreeRes = makeRequestWithRetries("GET",
+        JsonObject baseTreeRes = makeRequestWithRetries("GET",
                 "https://api.github.com/repos/" + GITHUB_REPO + "/git/trees/" + baseSha,
                 null, 3);
-        String baseTreeSha = baseTreeRes.get("sha").asText();
+        String baseTreeSha = baseTreeRes.get("sha").asString();
 
         // Step 2: Create blobs for each file
         List<Map<String, String>> treeItems = new ArrayList<>();
@@ -102,11 +108,11 @@ public class Bot {
         Map<String, String> filesToUpdate = updateVersionFile(version, changelog, filesDict, headers);
 
         for (Map.Entry<String, String> entry : filesToUpdate.entrySet()) {
-            ObjectNode blobData = json.createObjectNode();
-            blobData.put("content", entry.getValue());
-            blobData.put("encoding", "utf-8");
+            JsonObject blobData = new JsonObject();
+            blobData.add("content", entry.getValue());
+            blobData.add("encoding", "utf-8");
 
-            JsonNode blobRes = makeRequestWithRetries("POST",
+            JsonObject blobRes = makeRequestWithRetries("POST",
                     "https://api.github.com/repos/" + GITHUB_REPO + "/git/blobs",
                     blobData, 3);
 
@@ -114,32 +120,42 @@ public class Bot {
             treeEntry.put("path", entry.getKey());
             treeEntry.put("mode", "100644");
             treeEntry.put("type", "blob");
-            treeEntry.put("sha", blobRes.get("sha").asText());
+            treeEntry.put("sha", blobRes.get("sha").asString());
             treeItems.add(treeEntry);
         }
 
-        ObjectNode treePayload = json.createObjectNode();
-        treePayload.put("base_tree", baseTreeSha);
-        treePayload.set("tree", json.valueToTree(treeItems));
+        JsonObject treePayload = new JsonObject();
+        treePayload.add("base_tree", baseTreeSha);
+        JsonArray all = new JsonArray();
+        botLogger.warn("tree size: {}",treeItems.size());
+        for (var map : treeItems){
+            for(var item : map.entrySet() ){
+                var obj = new JsonObject();
+                obj.add(item.getKey(),item.getValue());
+                all.add(obj);
+            }
+        }
 
-        JsonNode newTree = makeRequestWithRetries("POST",
+        treePayload.set("tree",all);
+
+        JsonObject newTree = makeRequestWithRetries("POST",
                 "https://api.github.com/repos/" + GITHUB_REPO + "/git/trees",
                 treePayload, 3);
-        String newTreeSha = newTree.get("sha").asText();
+        String newTreeSha = newTree.get("sha").asString();
 
         // Step 3: Commit it
-        ObjectNode commitData = json.createObjectNode();
-        commitData.put("message", "Added " + version);
-        commitData.put("tree", newTreeSha);
-        commitData.set("parents", json.valueToTree(List.of(baseSha)));
+        JsonObject commitData = new JsonObject();
+        commitData.add("message", "Added " + version);
+        commitData.add("tree", newTreeSha);
+        commitData.set("parents", new JsonArray().add(baseSha));
 
-        JsonNode commitRes = makeRequestWithRetries("POST",
+        JsonObject commitRes = makeRequestWithRetries("POST",
                 "https://api.github.com/repos/" + GITHUB_REPO + "/git/commits",
                 commitData, 3);
-        String newCommitSha = commitRes.get("sha").asText();
+        String newCommitSha = commitRes.get("sha").asString();
 
-        ObjectNode patchRef = json.createObjectNode();
-        patchRef.put("sha", newCommitSha);
+        JsonObject patchRef = new JsonObject();
+        patchRef.add("sha", newCommitSha);
 
         makeRequestWithRetries("PATCH",
                 "https://api.github.com/repos/" + GITHUB_REPO + "/git/refs/heads/" + GITHUB_BRANCH,
@@ -148,22 +164,22 @@ public class Bot {
         // Step 4: Create or find release
         String uploadUrlBase;
         try {
-            JsonNode release = makeRequestWithRetries("GET",
+            JsonObject release = makeRequestWithRetries("GET",
                     "https://api.github.com/repos/" + GITHUB_REPO + "/releases/tags/" + version,
                     null, 1);
-            uploadUrlBase = release.get("upload_url").asText().split("\\{")[0];
+            uploadUrlBase = release.get("upload_url").asString().split("\\{")[0];
         } catch (Exception e) {
-            ObjectNode releasePayload = json.createObjectNode();
-            releasePayload.put("tag_name", version);
-            releasePayload.put("name", title(version));
-            releasePayload.put("body", changelog);
-            releasePayload.put("draft", false);
-            releasePayload.put("prerelease", false);
+            JsonObject releasePayload = new JsonObject();
+            releasePayload.add("tag_name", version);
+            releasePayload.add("name", title(version));
+            releasePayload.add("body", changelog);
+            releasePayload.add("draft", false);
+            releasePayload.add("prerelease", false);
 
-            JsonNode release = makeRequestWithRetries("POST",
+            JsonObject release = makeRequestWithRetries("POST",
                     "https://api.github.com/repos/" + GITHUB_REPO + "/releases",
                     releasePayload, 3);
-            uploadUrlBase = release.get("upload_url").asText().split("\\{")[0];
+            uploadUrlBase = release.get("upload_url").asString().split("\\{")[0];
         }
 
         // Step 5: Upload assets
@@ -196,7 +212,7 @@ public class Bot {
         botLogger.info("Finished uploading {}", title(version));
     }
 
-    @NotNull @SuppressWarnings("unchecked")
+    @NotNull
     public static Map<String, String> updateVersionFile(
             String version,
             String changelog,
@@ -208,9 +224,6 @@ public class Bot {
         String baseUrl = "https://github.com/" + GITHUB_REPO + "/releases/download/" + version;
         long currentTime = Instant.now().getEpochSecond();
 
-        ObjectMapper mapper = new ObjectMapper();
-
-
         // === versions.json ===
         HttpResponse<String> versionsResponse = httpGet(
                 "https://api.github.com/repos/" + GITHUB_REPO + "/contents/versions.json",
@@ -219,9 +232,16 @@ public class Bot {
 
         Map<String, Object> versionsData;
         try {
-            String encoded = mapper.readTree(versionsResponse.body()).get("content").asText();
+            String encoded = JsonValue.readJSON(versionsResponse.body()).asObject().getString("content", null);
             byte[] decoded = Base64.getDecoder().decode(encoded);
-            versionsData = mapper.readValue(decoded, Map.class);
+            String hjsonText = new String(decoded, StandardCharsets.UTF_8);
+
+            JsonObject root = JsonValue.readHjson(hjsonText).asObject();
+            versionsData = new LinkedHashMap<>();
+            for (String key : root.names()) {
+                versionsData.put(key, HJsonUtils.convertJsonValue(root.get(key)));
+            }
+
         } catch (Exception e) {
             versionsData = new HashMap<>();
             versionsData.put("latest", Map.of("alpha", version, "pre_alpha", "0.3.27"));
@@ -254,7 +274,7 @@ public class Bot {
             ));
         }
 
-        @SuppressWarnings("unchecked")
+        // TODO make versions.json work
         Map<String, Object> latest = new HashMap<>((Map<String, Object>) versionsData.get("latest"));
         versionsData.put("latest", latest); // optional if not already in map
         latest.put("alpha", version);
@@ -262,9 +282,13 @@ public class Bot {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> versionsList = (List<Map<String, Object>>) versionsData.get("versions");
         versionsList.addFirst(newVersion);
-
+//
         Map<String, String> filesToUpdate = new LinkedHashMap<>();
-        filesToUpdate.put("versions.json", mapper.writerWithDefaultPrettyPrinter().writeValueAsString(versionsData));
+        JsonObject jsonValues =  new JsonObject();
+        for (Map.Entry<String, Object> entry  : versionsData.entrySet()){
+            jsonValues.add(entry.getKey(), JsonValue.valueOfDsf(entry.getValue()));
+        }
+        filesToUpdate.put("versions.json", jsonValues.toString(Stringify.FORMATTED));
 
         return filesToUpdate;
     }
@@ -280,7 +304,7 @@ public class Bot {
         return HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     }
 
-    private static JsonNode makeRequestWithRetries(String method, String url, JsonNode body, int retries) throws Exception {
+    private static JsonObject makeRequestWithRetries(String method, String url, JsonObject body, int retries) throws Exception {
         for (int attempt = 0; attempt < retries; attempt++) {
             try {
                 Request.Builder builder = new Request.Builder()
@@ -289,7 +313,8 @@ public class Bot {
                         .addHeader("Accept", "application/vnd.github+json");
 
                 if (body != null) {
-                    builder.method(method, RequestBody.create(json.writeValueAsString(body), JSON));
+                    System.out.println(body.toString());
+                    builder.method(method, RequestBody.create(body.toString(), JSON));
                 } else {
                     builder.method(method, null);
                 }
@@ -300,11 +325,11 @@ public class Bot {
                         throw new IOException("HTTP " + response.code() + ": " + response.body().string());
                     }
                     assert response.body() != null;
-                    return json.readTree(response.body().string());
+                    return JsonValue.readJSON(response.body().string()).asObject();
                 }
             } catch (Exception e) {
                 if (attempt == retries - 1) throw e;
-                botLogger.error("Attempting {} failed:", attempt+ 1, e);
+                botLogger.error("Attempt {} failed:", attempt+ 1, e);
                 Thread.sleep((long) Math.pow(2, attempt) * 1000);
             }
         }
@@ -419,9 +444,8 @@ public class Bot {
                 if (postResponse.statusCode() != 200)
                     throw new IOException("Failed to fetch download URL. Status: " + postResponse.statusCode());
 
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode json = mapper.readTree(postResponse.body());
-                String downloadUrl = json.path("url").isTextual() ? json.get("url").asText() : null;
+                JsonObject json = JsonValue.readHjson(postResponse.body()).asObject();
+                String downloadUrl = json.get("url") != null ? json.get("url").asString() : null;;
                 if (downloadUrl == null || downloadUrl.isEmpty())
                     throw new RuntimeException("Failed to get direct download URL from itch.io response.");
 
