@@ -26,9 +26,7 @@ public class ImageServer {
             app.get("/status.svg", ctx -> {
                 String version = cachedVersion;
                 try {
-                    String latest = fetchLatestRelease("PuzzlesHQ", "CRArchive",true);
-                    imageServerLogger.info("Latest release: {}", latest);
-                    imageServerLogger.info("Latest itch: {}", fetchLatestItchVersion());
+                    String latest = fetchLatestRelease(true);
                     if (!latest.equals(version)) {
                         cachedVersion = latest;
                         version = latest;

@@ -1,6 +1,5 @@
 package dev.puzzleshq.utils;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,13 +11,16 @@ import org.jetbrains.annotations.Nullable;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ItchUtils {
     private static final String ITCH_URL = "https://finalforeach.itch.io/cosmic-reach";  // replace with actual URL
     private static final Pattern VERSION_PATTERN = Pattern.compile("\\d+(\\.\\d+)+");
+    private static final Logger itchUtilsLogger = LoggerFactory.getLogger("ItchUtils");
 
     @Nullable
-    public static String fetchLatestItchVersion() {
+    public static String fetchLatestItchVersion(Boolean fakePhase) {
         try {
             HttpClient client = HttpClient.newHttpClient();
 
@@ -40,9 +42,17 @@ public class ItchUtils {
                 return null;
             }
 
+
             Matcher matcher = VERSION_PATTERN.matcher(versionSpan.text());
-            return matcher.find() ? matcher.group() : null;
-        } catch (Exception _) {}
+            String match = matcher.find() ? matcher.group() : null;
+            Version version = new Version(match);
+            String phase = ((version.compareTo(new Version("0.3.27")) > 0) ? "-alpha" : "-pre_alpha");
+            return match + (fakePhase ? phase : "");
+        } catch (Exception e) {itchUtilsLogger.info(String.valueOf(e));}
         return null;
+    }
+
+    public  static String fetchLatestItchVersion() {
+        return fetchLatestItchVersion(true);
     }
 }

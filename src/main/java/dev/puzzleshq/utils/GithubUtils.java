@@ -8,12 +8,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+import static dev.puzzleshq.Main.GITHUB_REPO;
+
 public class GithubUtils {
 
-    public static String fetchLatestRelease(String owner, String repo, Boolean as_title) throws Exception {
+    public static String fetchLatestRelease(Boolean asTitle) throws Exception {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("https://api.github.com/repos/" + owner + "/" + repo + "/releases/latest"))
+                .uri(new URI("https://api.github.com/repos/" + GITHUB_REPO + "/releases/latest"))
                 .header("Accept", "application/vnd.github+json")
                 .build();
 
@@ -24,7 +26,11 @@ public class GithubUtils {
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode json = mapper.readTree(response.body());
-        return ( as_title ? json.get("name").asText() : json.get("tag_name").asText() ); // or "name" depending on format
+        return ( asTitle ? json.get("name").asText() : json.get("tag_name").asText() ); // or "name" depending on format
+    }
+
+    public static String fetchLatestRelease() throws Exception {
+        return fetchLatestRelease(false);
     }
 
 }
