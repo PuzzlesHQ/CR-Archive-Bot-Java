@@ -1,17 +1,20 @@
 package dev.puzzleshq.utils;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.util.regex.*;
 
-public class Version implements Comparable<Version> {
+public class VersionUtils implements Comparable<VersionUtils> {
     public final int major, minor, patch;
-    public final Character patchLetter; // e.g., 'a', 'b', ..., or null
-    public final String tag; // optional, e.g., "red", or null
+    public final Character patchLetter; // e.g. 'a', 'b', ..., or null
+    public final String tag; // optional, e.g. "red", or null
 
     private static final Pattern VERSION_PATTERN = Pattern.compile(
             "^(\\d+)\\.(\\d+)\\.(\\d+)([a-z])?(?:-([a-z]+))?$"
     );
 
-    public Version(String versionString) {
+    public VersionUtils(String versionString) {
         Matcher m = VERSION_PATTERN.matcher(versionString);
         if (!m.matches()) {
             throw new IllegalArgumentException("Invalid version format: " + versionString);
@@ -21,7 +24,7 @@ public class Version implements Comparable<Version> {
         minor = Integer.parseInt(m.group(2));
         patch = Integer.parseInt(m.group(3));
         patchLetter = m.group(4) != null ? m.group(4).charAt(0) : null;
-        tag = m.group(5); // may be null
+        tag = m.group(5); // It may be null
     }
 
     @Override
@@ -34,7 +37,7 @@ public class Version implements Comparable<Version> {
     }
 
     @Override
-    public int compareTo(Version other) {
+    public int compareTo(@NotNull VersionUtils other) {
         int cmp = Integer.compare(this.major, other.major);
         if (cmp != 0) return cmp;
 
@@ -44,8 +47,9 @@ public class Version implements Comparable<Version> {
         cmp = Integer.compare(this.patch, other.patch);
         if (cmp != 0) return cmp;
 
-        if (this.patchLetter != null && other.patchLetter != null)
-            cmp = Character.compare(this.patchLetter, other.patchLetter);
+
+        //noinspection StatementWithEmptyBody
+        if (this.patchLetter != null && other.patchLetter != null) {}
         else if (this.patchLetter != null)
             return 1;
         else if (other.patchLetter != null)
@@ -64,7 +68,8 @@ public class Version implements Comparable<Version> {
         return Integer.compare(tagRank(a), tagRank(b));
     }
 
-    private int tagRank(String tag) {
+    @Contract(pure = true)
+    private int tagRank(@NotNull String tag) {
         return switch (tag) {
             case "red" -> 0;
             case "blue" -> 1;

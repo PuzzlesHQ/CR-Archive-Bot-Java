@@ -45,8 +45,8 @@ public class ItchUtils {
 
             Matcher matcher = VERSION_PATTERN.matcher(versionSpan.text());
             String match = matcher.find() ? matcher.group() : null;
-            Version version = new Version(match);
-            String phase = ((version.compareTo(new Version("0.3.27")) > 0) ? "-alpha" : "-pre_alpha");
+            VersionUtils version = new VersionUtils(match);
+            String phase = ((version.compareTo(new VersionUtils("0.3.27")) > 0) ? "-alpha" : "-pre_alpha");
             return match + (fakePhase ? phase : "");
         } catch (Exception e) {itchUtilsLogger.info(String.valueOf(e));}
         return null;

@@ -8,7 +8,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 import static dev.puzzleshq.utils.GithubUtils.fetchLatestRelease;
-import static dev.puzzleshq.utils.ItchUtils.fetchLatestItchVersion;
 
 import io.javalin.Javalin;
 
@@ -49,7 +48,16 @@ public class ImageServer {
                     ctx.status(500).result("Failed to fetch shield SVG");
                     imageServerLogger.error("Could not fetch shield URL", e);
                 }
+
+                new Thread(() -> {
+                    try {
+                        Bot.runArchiveBot();
+                    } catch (Exception e) {
+                        imageServerLogger.error("Bot.runArchiveBot() failed", e);
+                    }
+                }).start();
             });
+
 
             // Keep the thread alive if needed
             while (!stopImageServer) {
@@ -59,6 +67,7 @@ public class ImageServer {
             }
 
             app.stop();
+
         });
     }
 
