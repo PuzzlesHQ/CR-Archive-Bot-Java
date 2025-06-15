@@ -7,7 +7,7 @@ COPY . .
 RUN gradle shadowJar --no-daemon
 
 # ---------- Stage 2: Run ----------
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:24-jre-alpine
 WORKDIR /app
 
 # Copy fat JAR from builder
