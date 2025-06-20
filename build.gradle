@@ -19,8 +19,17 @@ dependencies {
     implementation "org.jsoup:jsoup:$jsoup_version"
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "com.auth0:java-jwt:$auth0_version"
+
+    // pem stuff
     implementation "org.bouncycastle:bcprov-jdk18on:$bouncy_castle_version"
     implementation "org.bouncycastle:bcpkix-jdk18on:$bouncy_castle_version"
+
+    implementation "io.jsonwebtoken:jjwt-api:$jjwt_version"
+    runtimeOnly "io.jsonwebtoken:jjwt-impl:$jjwt_version"
+    runtimeOnly "io.jsonwebtoken:jjwt-jackson:$jjwt_version"
+
+    // Github api
+    implementation "org.kohsuke:github-api:$github_API_Version"
 
     // json
     implementation "org.hjson:hjson:$hjson_version"

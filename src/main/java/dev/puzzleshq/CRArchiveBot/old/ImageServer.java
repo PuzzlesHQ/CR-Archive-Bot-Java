@@ -1,4 +1,4 @@
-package dev.puzzleshq;
+package dev.puzzleshq.CRArchiveBot.old;
 
 import io.javalin.Javalin;
 import org.slf4j.Logger;
@@ -8,7 +8,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import static dev.puzzleshq.utils.GithubUtils.fetchLatestRelease;
+import static dev.puzzleshq.CRArchiveBot.old.utils.GithubUtils.fetchLatestRelease;
 
 public class ImageServer {
     private static final Logger imageServerLogger = LoggerFactory.getLogger("ImageServer");

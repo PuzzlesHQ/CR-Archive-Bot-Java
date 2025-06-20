@@ -1,8 +1,8 @@
-package dev.puzzleshq;
+package dev.puzzleshq.CRArchiveBot.old;
 
-import dev.puzzleshq.utils.GithubUtils;
-import dev.puzzleshq.utils.HJsonUtils;
-import dev.puzzleshq.utils.ItchUtils;
+import dev.puzzleshq.CRArchiveBot.old.utils.GithubUtils;
+import dev.puzzleshq.CRArchiveBot.old.utils.HJsonUtils;
+import dev.puzzleshq.CRArchiveBot.old.utils.ItchUtils;
 import okhttp3.*;
 import org.hjson.JsonArray;
 import org.hjson.JsonObject;
@@ -32,10 +32,10 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import static dev.puzzleshq.Main.*;
-import static dev.puzzleshq.utils.FileUtils.calculateFileHash;
-import static dev.puzzleshq.utils.FileUtils.getFileSize;
-import static dev.puzzleshq.utils.StringUtils.title;
+import static dev.puzzleshq.CRArchiveBot.old.Main.*;
+import static dev.puzzleshq.CRArchiveBot.old.utils.FileUtils.calculateFileHash;
+import static dev.puzzleshq.CRArchiveBot.old.utils.FileUtils.getFileSize;
+import static dev.puzzleshq.CRArchiveBot.old.utils.StringUtils.title;
 
 public class Bot {
     private static final Logger botLogger = LoggerFactory.getLogger("Archive Keeper");

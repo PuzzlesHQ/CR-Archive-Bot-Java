@@ -1,4 +1,4 @@
-package dev.puzzleshq.utils;
+package dev.puzzleshq.CRArchiveBot.old.utils;
 
 import org.hjson.JsonObject;
 import org.hjson.JsonValue;
@@ -8,7 +8,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-import static dev.puzzleshq.Main.GITHUB_REPO;
+import static dev.puzzleshq.CRArchiveBot.old.Main.GITHUB_REPO;
 
 public class GithubUtils {
 

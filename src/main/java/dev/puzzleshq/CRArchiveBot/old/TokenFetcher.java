@@ -1,4 +1,4 @@
-package dev.puzzleshq;
+package dev.puzzleshq.CRArchiveBot.old;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -23,11 +23,11 @@ import java.security.interfaces.RSAPrivateKey;
 import java.time.Instant;
 
 public class TokenFetcher {
-    private static final String APP_ID = "1399684";
+    public static final String APP_ID = "1399684";
     private static final String PRIVATE_KEY_PATH = "private-key.pem";
-    private static final String GITHUB_API = "https://api.github.com";
+    public static final String GITHUB_API = "https://api.github.com";
 
-    private static final OkHttpClient client = new OkHttpClient();
+    public static final OkHttpClient client = new OkHttpClient();
 
     public static String getToken() throws Exception {
         RSAPrivateKey privateKey = (RSAPrivateKey) loadPrivateKey(PRIVATE_KEY_PATH);

@@ -1,4 +1,4 @@
-package dev.puzzleshq.utils;
+package dev.puzzleshq.CRArchiveBot.old.utils;
 
 public class StringUtils {
     public static String title(String input, boolean format) {

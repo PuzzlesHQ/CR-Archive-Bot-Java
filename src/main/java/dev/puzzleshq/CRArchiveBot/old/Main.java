@@ -1,4 +1,4 @@
-package dev.puzzleshq;
+package dev.puzzleshq.CRArchiveBot.old;
 
 public class Main {
     public static final String GITHUB_REPO = "PuzzlesHQ/CRArchive";
@@ -7,8 +7,9 @@ public class Main {
 
 
     public static void main(String[] args) throws Exception {
-        Bot.runArchiveBot();
-        ImageServer.runImageServer();
+        dev.puzzleshq.CRArchiveBot.Main.main(args);
+//        Bot.runArchiveBot();
+//        ImageServer.runImageServer();
 
     }
 

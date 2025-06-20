@@ -1,4 +1,4 @@
-package dev.puzzleshq.utils;
+package dev.puzzleshq.CRArchiveBot.old.utils;
 
 import org.hjson.JsonValue;
 
