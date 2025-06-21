@@ -4,10 +4,14 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
-def mainClassString = 'dev.puzzleshq.Main'
+def mainClassString = 'dev.puzzleshq.CRArchiveBot.Main'
 
 application {
     mainClass = mainClassString
+}
+
+configurations {
+    mockitoAgent
 }
 
 repositories {
@@ -39,13 +43,38 @@ dependencies {
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
 
-    // Test
-    testImplementation platform ("org.junit:junit-bom:$junit_bom_version")
-    testImplementation "org.junit.jupiter:junit-jupiter"
+    // test
+    testImplementation(platform("org.junit:junit-bom:$junit_jupiter_version"))
+    testImplementation('org.junit.jupiter:junit-jupiter')
+    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
+    testImplementation "org.mockito:mockito-core:$mockito_version"
+
+    testImplementation("org.mockito:mockito-core:$mockito_version")
+    mockitoAgent("org.mockito:mockito-core:$mockito_version") {
+        transitive = false
+    }
 }
 
 test {
     useJUnitPlatform()
+}
+
+tasks.withType(JavaExec).configureEach {
+    workingDir = file("run/")
+    doFirst {
+        workingDir.mkdirs()
+    }
+}
+
+
+tasks {
+    test {
+        workingDir = file("test/")
+        doFirst {
+            workingDir.mkdirs()
+        }
+        jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
+    }
 }
 
 java {

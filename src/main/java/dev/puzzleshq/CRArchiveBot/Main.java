@@ -6,6 +6,6 @@ public class Main {
 
     public static void main(String[] args) {
 
-        GithubUtils.getCRArchive().listReleases().forEach(System.out::println);
+        ReleaseMaker.renameAllReleases();
     }
 }
