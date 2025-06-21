@@ -1,5 +1,5 @@
 # -------- Stage 1: Build --------
-FROM eclipse-temurin:24-jdk AS build
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
 # Install Gradle 8.7 manually (or use your project's wrapper)
