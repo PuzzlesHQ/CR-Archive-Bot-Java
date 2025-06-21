@@ -4,27 +4,33 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '8.1.1'
 }
 
-def mainClassString = 'dev.puzzleshq.CRArchiveBot.Main'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(24)
+    }
+}
 
 application {
-    mainClass = mainClassString
+    mainClass = 'dev.puzzleshq.CRArchiveBot.Main'
 }
 
-configurations {
-    mockitoAgent
-}
-
+// Repositories
 repositories {
     mavenCentral()
 }
 
+// Custom configurations (define early!)
+configurations {
+    mockitoAgent
+}
+
+// Dependencies
 dependencies {
     implementation "io.javalin:javalin:$javalin_version"
     implementation "org.jsoup:jsoup:$jsoup_version"
     implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
     implementation "com.auth0:java-jwt:$auth0_version"
 
-    // pem stuff
     implementation "org.bouncycastle:bcprov-jdk18on:$bouncy_castle_version"
     implementation "org.bouncycastle:bcpkix-jdk18on:$bouncy_castle_version"
 
@@ -32,33 +38,39 @@ dependencies {
     runtimeOnly "io.jsonwebtoken:jjwt-impl:$jjwt_version"
     runtimeOnly "io.jsonwebtoken:jjwt-jackson:$jjwt_version"
 
-    // Github api
     implementation "org.kohsuke:github-api:$github_API_Version"
-
-    // json
     implementation "org.hjson:hjson:$hjson_version"
 
-    // logging
     implementation("org.apache.logging.log4j:log4j-api:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-core:$log4jVersion")
     implementation("org.apache.logging.log4j:log4j-slf4j2-impl:$log4jVersion")
 
-    // test
-    testImplementation(platform("org.junit:junit-bom:$junit_jupiter_version"))
-    testImplementation('org.junit.jupiter:junit-jupiter')
-    testRuntimeOnly('org.junit.platform:junit-platform-launcher')
-    testImplementation "org.mockito:mockito-core:$mockito_version"
+    testImplementation platform("org.junit:junit-bom:$junit_jupiter_version")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 
-    testImplementation("org.mockito:mockito-core:$mockito_version")
+    testImplementation "org.mockito:mockito-core:$mockito_version"
     mockitoAgent("org.mockito:mockito-core:$mockito_version") {
         transitive = false
     }
 }
 
-test {
-    useJUnitPlatform()
+// Ensure fat JAR is built
+tasks.build {
+    dependsOn shadowJar
 }
 
+// Test config
+test {
+    useJUnitPlatform()
+    workingDir = file("test/")
+    doFirst {
+        workingDir.mkdirs()
+    }
+    jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
+}
+
+// Runtime working dir
 tasks.withType(JavaExec).configureEach {
     workingDir = file("run/")
     doFirst {
@@ -66,28 +78,9 @@ tasks.withType(JavaExec).configureEach {
     }
 }
 
-
-tasks {
-    test {
-        workingDir = file("test/")
-        doFirst {
-            workingDir.mkdirs()
-        }
-        jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
-    }
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_24
-    targetCompatibility = JavaVersion.VERSION_24
-
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(24)
-    }
-}
-
+// JAR manifest fix
 jar {
     manifest {
-        attributes 'Main-Class': mainClassString
+        attributes 'Main-Class': application.mainClass.get()
     }
 }
