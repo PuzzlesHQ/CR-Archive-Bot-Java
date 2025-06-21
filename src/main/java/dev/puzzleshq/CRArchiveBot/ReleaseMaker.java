@@ -12,11 +12,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Objects;
 
 public class ReleaseMaker {
 
     public static void renameAllReleases(){
-        GithubUtils.getCRArchive().listReleases().forEach(ghRelease -> {
+        Objects.requireNonNull(GithubUtils.getCRArchive()).listReleases().forEach(ghRelease -> {
 
             String version = ghRelease.getTagName().replaceAll("-alpha", "").replaceAll("-pre_alpha", "");
             Path versionPath = Paths.get("downloads/", version);
@@ -25,7 +26,7 @@ public class ReleaseMaker {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-            
+
             ghRelease.listAssets().forEach(ghAsset -> {
 //                try {
 //                    InputStream in = URI.create(ghAsset.getBrowserDownloadUrl()).toURL().openStream();

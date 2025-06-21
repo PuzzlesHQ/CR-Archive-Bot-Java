@@ -1,20 +1,10 @@
-# ---------- Stage 1: Build ----------
-FROM gradle:8.5-jdk17-alpine AS builder
-WORKDIR /app
+# build stage
+FROM maven:3.9-eclipse-temurin-24 AS build
+COPY pom.xml src/ ./
+RUN mvn clean package -DskipTests
 
-# Copy everything and build the fat jar
-COPY . .
-RUN gradle shadowJar --no-daemon
-
-# ---------- Stage 2: Run ----------
-FROM eclipse-temurin:24-jre-alpine
-WORKDIR /app
-
-# Copy fat JAR from builder
-COPY --from=builder /app/build/libs/*-all.jar app.jar
-
-# Expose port (update if your app uses a different port)
+# runtime stage
+FROM eclipse-temurin:24-jdk
+COPY --from=build target/*.jar app.jar
 EXPOSE 8080
-
-# Run it
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "/app.jar"]
