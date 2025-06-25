@@ -7,17 +7,22 @@ public class FormatConverterUtils {
 
     static Pattern fileNameStripper = Pattern.compile("cosmic-reach-client-|cosmic-reach-server-|.jar");
     static Pattern devVersion = Pattern.compile("(?<=\\d)(?=[a-z])");
+    static Pattern blueOrRed = Pattern.compile("blue|red");
 
     public static String convertFormat(String format){
         String[] split = format.split("-");
 
         String versionBad = split[0];
-        String version;
+        String version = null;
         String dev = null;
         String pre = null;
         String phase;
 
-        if (split.length == 3) {
+        if (blueOrRed.matcher(split[1]).find()) {
+            versionBad += "."+split[1];
+            phase = split[2];
+            System.out.println("hi");
+        }else if (split.length == 3) {
             pre = split[1];
             phase = split[2];
         } else {
