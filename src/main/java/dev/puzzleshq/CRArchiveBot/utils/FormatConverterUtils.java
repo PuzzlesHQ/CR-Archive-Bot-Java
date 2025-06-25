@@ -1,5 +1,6 @@
 package dev.puzzleshq.CRArchiveBot.utils;
 
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 public class FormatConverterUtils {
@@ -49,7 +50,16 @@ public class FormatConverterUtils {
 
     public static String convertFileNameFormat(String fileName){
         fileName = fileName.replaceAll(fileNameStripper.pattern(), "");
-        return convertFormat(fileName);
+        StringBuilder sb = new StringBuilder();
+        if (fileName.contains("server")) {
+            sb.append("cosmic-reach-client-");
+        } else {
+            sb.append("cosmic-reach-client-");
+        }
+
+        sb.append(convertFormat(fileName));
+        sb.append(".jar");
+        return sb.toString();
     }
 
 }
