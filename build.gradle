@@ -72,12 +72,6 @@ tasks.withType(JavaExec).configureEach {
     }
 }
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
 // JAR manifest fix
 jar {
     manifest {
