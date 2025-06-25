@@ -1,5 +1,7 @@
 package dev.puzzleshq.CRArchiveBot;
 
+import dev.puzzleshq.CRArchiveBot.utils.FileUtils;
+import dev.puzzleshq.CRArchiveBot.utils.FormatConverterUtils;
 import dev.puzzleshq.CRArchiveBot.utils.GithubAssetUtils;
 import dev.puzzleshq.CRArchiveBot.utils.GithubUtils;
 
@@ -8,38 +10,33 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
 
 public class ReleaseMaker {
 
     public static void renameAllReleases(){
+        StringBuilder builder = new StringBuilder();
+
         GithubUtils.getCRArchive().listReleases().forEach(ghRelease -> {
 
             String version = ghRelease.getTagName().replaceAll("-alpha", "").replaceAll("-pre_alpha", "");
             Path versionPath = Paths.get("downloads/", version);
-            try {
-                Files.createDirectories(versionPath);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            
-            ghRelease.listAssets().forEach(ghAsset -> {
-//                try {
-//                    InputStream in = URI.create(ghAsset.getBrowserDownloadUrl()).toURL().openStream();
-//                    Files.copy(in, Paths.get(String.valueOf(versionPath), version, ".jar"), StandardCopyOption.REPLACE_EXISTING);
-//                } catch (IOException e) {
-//                    throw new RuntimeException(e);
-//                }
-//                System.out.println(ghAsset.getContentType());
-//                System.out.println(ghAsset.getBrowserDownloadUrl());
+            FileUtils.makeDir(versionPath);
 
-                GithubAssetUtils.downloadGHAsset(ghAsset);
+            ghRelease.listAssets().forEach(ghAsset -> {
+
+                builder.append(FormatConverterUtils.convertFileNameFormat(ghAsset.getName()));
+                builder.append("\n");
 
             });
         });
+
+        try {
+            Files.writeString(Path.of("version.txt"), builder.toString(), StandardOpenOption.CREATE);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void renameRelease() {
