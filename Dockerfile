@@ -13,7 +13,7 @@ COPY . .
 RUN gradle shadowJar --no-daemon
 
 # -------- Stage 2: Runtime --------
-FROM eclipse-temurin:24-jdk
+FROM eclipse-temurin:21-jdk
 WORKDIR /app
 
 COPY --from=build /app/build/libs/*-all.jar app.jar
