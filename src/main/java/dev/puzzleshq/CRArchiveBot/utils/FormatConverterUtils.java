@@ -21,7 +21,6 @@ public class FormatConverterUtils {
         if (blueOrRed.matcher(split[1]).find()) {
             versionBad += "."+split[1];
             phase = split[2];
-            System.out.println("hi");
         }else if (split.length == 3) {
             pre = split[1];
             phase = split[2];
