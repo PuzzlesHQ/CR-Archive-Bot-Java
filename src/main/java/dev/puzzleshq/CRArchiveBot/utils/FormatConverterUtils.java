@@ -52,7 +52,7 @@ public class FormatConverterUtils {
         fileName = fileName.replaceAll(fileNameStripper.pattern(), "");
         StringBuilder sb = new StringBuilder();
         if (fileName.contains("server")) {
-            sb.append("cosmic-reach-client-");
+            sb.append("cosmic-reach-server-");
         } else {
             sb.append("cosmic-reach-client-");
         }
