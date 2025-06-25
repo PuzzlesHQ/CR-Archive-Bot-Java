@@ -1,4 +1,4 @@
-package dev.puzzleshq.CRArchiveBot.old;
+package dev.puzzleshq.CRArchiveBot;
 
 import io.javalin.Javalin;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ public class ImageServer {
 
                 new Thread(() -> {
                     try {
-                        Bot.runArchiveBot();
+//                        Bot.runArchiveBot();
                     } catch (Exception e) {
                         imageServerLogger.error("Bot.runArchiveBot() failed", e);
                     }

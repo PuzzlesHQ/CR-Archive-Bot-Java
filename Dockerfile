@@ -1,20 +1,21 @@
-# ---------- Stage 1: Build ----------
-FROM gradle:8.5-jdk17-alpine AS builder
+# -------- Stage 1: Build --------
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
-# Copy everything and build the fat jar
+# Install Gradle 8.7 manually (or use your project's wrapper)
+RUN apt-get update && apt-get install -y unzip wget && \
+    wget https://services.gradle.org/distributions/gradle-8.7-bin.zip && \
+    unzip gradle-8.7-bin.zip -d /opt && \
+    ln -s /opt/gradle-8.7/bin/gradle /usr/bin/gradle
+
+# Copy everything and build
 COPY . .
 RUN gradle shadowJar --no-daemon
 
-# ---------- Stage 2: Run ----------
-FROM eclipse-temurin:24-jre-alpine
+# -------- Stage 2: Runtime --------
+FROM eclipse-temurin:24-jdk
 WORKDIR /app
 
-# Copy fat JAR from builder
-COPY --from=builder /app/build/libs/*-all.jar app.jar
-
-# Expose port (update if your app uses a different port)
+COPY --from=build /app/build/libs/*-all.jar app.jar
 EXPOSE 8080
-
-# Run it
 ENTRYPOINT ["java", "-jar", "app.jar"]
