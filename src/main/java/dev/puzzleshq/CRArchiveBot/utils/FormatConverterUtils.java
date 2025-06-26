@@ -53,7 +53,7 @@ public class FormatConverterUtils {
     }
 
     public static String convertFileNameFormat(String fileName){
-        fileName = fileName.replaceAll(fileNameStripper.pattern(), "");
+        String newFileName = fileName.replaceAll(fileNameStripper.pattern(), "");
         StringBuilder sb = new StringBuilder();
         if (fileName.contains("server")) {
             sb.append("cosmic-reach-server-");
@@ -61,7 +61,7 @@ public class FormatConverterUtils {
             sb.append("cosmic-reach-client-");
         }
 
-        sb.append(convertFormat(fileName));
+        sb.append(convertFormat(newFileName));
         sb.append(".jar");
         return sb.toString();
     }
