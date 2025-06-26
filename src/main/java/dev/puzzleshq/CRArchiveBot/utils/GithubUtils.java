@@ -8,12 +8,41 @@ import org.kohsuke.github.extras.authorization.JWTTokenProvider;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
+import java.util.Objects;
 
 import static dev.puzzleshq.CRArchiveBot.Constants.*;
 
 public class GithubUtils {
 
     private static GHAuthenticatedAppInstallation ghAppInstallation;
+
+    public static GHRelease makeRelease(String tag, String releaseName, String releaseBody){
+        try {
+            return GithubUtils.getCRArchive().createRelease(tag)
+                    .name(releaseName)
+                    .body(releaseBody)
+                    .create();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static GHRelease updateRelease(GHRelease release, String tag, String releaseName){
+        try {
+            String oldTag = release.getTagName();
+            GHRelease newRelease = release.update()
+                    .tag(tag)
+                    .name(releaseName)
+                    .update();
+
+            if (!Objects.equals(oldTag, tag)){
+                Objects.requireNonNull(getCRArchive()).getRef("tags/" + oldTag).delete();
+            }
+            return newRelease;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Nullable
     public static GHRepository getCRArchive(){

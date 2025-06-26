@@ -1,6 +1,5 @@
 package dev.puzzleshq.CRArchiveBot.utils;
 
-import java.util.Arrays;
 import java.util.regex.Pattern;
 
 public class FormatConverterUtils {
