@@ -6,6 +6,6 @@ public class Main {
 
     public static void main(String[] args) {
         ImageServer.runImageServer();
-        ReleaseMaker.renameAllReleases();
+//        ReleaseMaker.renameAllReleases();
     }
 }
