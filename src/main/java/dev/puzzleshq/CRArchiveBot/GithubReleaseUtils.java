@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,10 +22,13 @@ public class GithubReleaseUtils {
 
     //TODO make a renameRelease
     public static void renameAllReleases(){
+        logger.info("Starting renaming");
         //old version.  new version, new jar name server/client
         Map<String, Pair<String, Pair<String, String>>> renamer = new HashMap<>();
 
+        logger.info("Start renaming of releases");
         GithubUtils.getArchive().listReleases().forEach(ghRelease -> {
+            logger.info("Renaming release: {}", ghRelease.getName());
 
             String version = FormatConverterUtils.convertFormat(ghRelease.getTagName());
             Path versionPath = Paths.get("downloads/", version);
@@ -35,6 +37,7 @@ public class GithubReleaseUtils {
             Map<Path, String> assets = new HashMap<>();
             Pair<String, String> fileNames = new Pair<>();
             ghRelease.listAssets().forEach(ghAsset -> {
+                logger.info("Renaming asset: {}", ghAsset.getName());
                 String fileName = FormatConverterUtils.convertFileNameFormat(ghAsset.getName());
                 Path path = GithubAssetUtils.downloadGHAsset(ghAsset, versionPath, fileName, "", true);
                 assets.put(path, ghAsset.getContentType());
@@ -73,12 +76,16 @@ public class GithubReleaseUtils {
             });
 
         });
+        logger.info("Finished renaming of releases");
+
+        logger.info("Starting updating of versions.json");
 
         GHContent ghContent = GithubFileUtils.getFile("versions.json");
         JsonObject json = GithubFileUtils.getFileAsJson(ghContent).asObject();
         JsonArray versions  = json.get("versions").asArray();
 
         versions.forEach(version -> {
+            logger.info("Updating version: {}", version.asObject().get("id"));
             JsonObject jsonObject = version.asObject();
             Pair<String, Pair<String, String>> stuff = renamer.get(jsonObject.get("id").asString());
             if (stuff != null){
@@ -98,9 +105,11 @@ public class GithubReleaseUtils {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        logger.info("Finished updating of versions.json");
 
         System.out.println(json.toString(Stringify.FORMATTED));
 
+        logger.info("Finished renaming");
     }
 
     private static void updateUrlJson(String version, String fileName, JsonValue value) {
@@ -126,14 +135,28 @@ public class GithubReleaseUtils {
     }
 
     public static void copyAllReleases(GHRepository from, GHRepository to) {
+        logger.info("Starting copying of releases");
         from.listReleases().forEach(ghRelease -> {
+            logger.info("copying release: {} to: {}", ghRelease.getName(),  to.getFullName());
             GithubUtils.copyRelease(ghRelease, to);
         });
+        logger.info("Finished copying of releases");
     }
 
     public static void deleteAllReleases(GHRepository from) {
         try {
-            from.listReleases().toList().forEach(GithubUtils::deleteRelease);
+            logger.info("Start deleting all releases");
+            from.listReleases().toList().forEach(GithubReleaseUtils::deleteReleases);
+            logger.info("Finished deleting all releases");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void deleteReleases(GHRelease ghRelease) {
+        try {
+            logger.info("Deleting release {}", ghRelease.getName());
+            ghRelease.delete();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
