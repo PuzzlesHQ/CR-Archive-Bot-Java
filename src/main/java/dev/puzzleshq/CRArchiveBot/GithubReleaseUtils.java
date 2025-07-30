@@ -20,6 +20,11 @@ import java.util.Map;
 public class GithubReleaseUtils {
     private static final Logger logger = LoggerFactory.getLogger("GithubReleaseUtils");
 
+    public static boolean makeNewRelease(){
+//        GithubUtils.getArchive().createRelease()
+        return true;
+    }
+
     //TODO make a renameRelease
     public static void renameAllReleases(){
         logger.info("Starting renaming");
