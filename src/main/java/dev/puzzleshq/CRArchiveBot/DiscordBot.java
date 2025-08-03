@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -36,6 +37,8 @@ public class DiscordBot extends ListenerAdapter {
     public static String gitVersion;
     public static String itchVersion;
     public static boolean mismatch;
+
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
     public static void main(String[] args) {
         String token = System.getenv("TOKEN");
@@ -139,11 +142,22 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     public void archive(SlashCommandInteractionEvent event) {
+        if (!isRunning.compareAndSet(false, true)) {
+            event.reply("Archival in progress").setEphemeral(true).queue();
+            return;
+        }
+
         List<String> steps = List.of("Checking git", "Checking itch", "Downloading files", "Creating release", "Uploading files");
         List<Boolean> completed = new ArrayList<>(Collections.nCopies(steps.size(), false));
 
-        event.deferReply().queue(hook -> hook.sendMessage("Preparing...").queue(message -> runStepsSequentially(steps, completed, message, 0)));
+        event.deferReply().queue(hook -> {
+            hook.sendMessage("Preparing...").queue(message -> {
+                runStepsSequentially(steps, completed, message, 0)
+                        .whenComplete((__, ___) -> isRunning.set(false));  // release lock
+            });
+        });
     }
+
 
     public static CompletableFuture<Void> checkGit() {
         return CompletableFuture.runAsync(() -> {
