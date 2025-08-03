@@ -51,7 +51,6 @@ public class Bot {
 
 
     public static void runArchiveBot() throws Exception {
-        // Lando's charger is a fucking bastard, and he really fucking hates it
         // In progress
         botLogger.info("Itch {} | Github {}", ItchUtils.fetchLatestItchVersion(), GithubUtils.fetchLatestRelease());
         if (!Objects.equals(ItchUtils.fetchLatestItchVersion(true), GithubUtils.fetchLatestRelease())) {

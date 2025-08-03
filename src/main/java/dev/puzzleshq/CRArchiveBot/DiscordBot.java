@@ -2,15 +2,23 @@ package dev.puzzleshq.CRArchiveBot;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.interactions.InteractionContextType;
+import net.dv8tion.jda.api.interactions.InteractionHook;
+import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +32,7 @@ import java.util.stream.Collectors;
 
 import static dev.puzzleshq.CRArchiveBot.Constants.channelID;
 import static dev.puzzleshq.CRArchiveBot.Constants.serverID;
+import static org.eclipse.jetty.webapp.MetaData.Complete.True;
 import static org.kohsuke.github.ReactionContent.HEART;
 
 public class DiscordBot extends ListenerAdapter {
@@ -51,6 +60,18 @@ public class DiscordBot extends ListenerAdapter {
                     .setActivity(Activity.watching("the archive"))
                     .build();
 
+            CommandListUpdateAction commands = jda.updateCommands();
+
+            commands.addCommands(
+                    Commands.slash("archive", "Manually update the archive")
+                            // The default integration types are GUILD_INSTALL.
+                            // Can't use this in DMs, and in guilds the bot isn't in.
+                            .setContexts(InteractionContextType.GUILD)
+                            .setDefaultPermissions(DefaultMemberPermissions.DISABLED) // only admins should be able to use this command.
+            );
+
+            commands.queue();
+
             jda.getRestPing().queue(ping ->
                     System.out.println("Logged in with ping: " + ping)
             );
@@ -75,38 +96,60 @@ public class DiscordBot extends ListenerAdapter {
         Message message = event.getMessage();
         String displayMessage = message.getContentRaw();
 
-        if (guild.getId().equals(serverID) && channel.getId().equals(channelID) && channel.getType().isMessage()) { if (displayMessage.contains("@Game Updates")){
+        if (guild.getId().equals(serverID) && channel.getId().equals(channelID) && channel.getType().isMessage()) {
+            if (displayMessage.contains("@Game Updates")) {
 
-           String changelog = displayMessage.lines().skip(1).collect(Collectors.joining("\n"));
-           String version = Pattern.compile("(?<=Cosmic Reach )\\d+\\.\\d+\\.\\d+(?= is out!)").matcher(displayMessage).results().findFirst().map(MatchResult::group).orElse(null);
-           List<Message.Attachment> attachmentList = message.getAttachments().isEmpty() ? null : message.getAttachments();
+                String changelog = displayMessage.lines().skip(1).collect(Collectors.joining("\n"));
+                String version = Pattern.compile("(?<=Cosmic Reach )\\d+\\.\\d+\\.\\d+(?= is out!)").matcher(displayMessage).results().findFirst().map(MatchResult::group).orElse(null);
+                List<Message.Attachment> attachmentList = message.getAttachments().isEmpty() ? null : message.getAttachments();
 
 
-            if (attachmentList != null){
-                System.out.printf("[%s] %s \n %s \n",
-                    version,
-                    attachmentList.size(),
-                    changelog
-                );
-            } else {
-                System.out.printf("[%s] [%#s] %#s: %s \n",
-                        event.getGuild().getName(),
-                        channel,
-                        author,
-                        message.getContentDisplay()
-                );
+                if (attachmentList != null) {
+                    System.out.printf("[%s] %s \n %s \n",
+                            version,
+                            attachmentList.size(),
+                            changelog
+                    );
+                } else {
+                    System.out.printf("[%s] [%#s] %#s: %s \n",
+                            event.getGuild().getName(),
+                            channel,
+                            author,
+                            message.getContentDisplay()
+                    );
+                }
+
+                CRArchiveUpdater.updateCRArchive(changelog, version, attachmentList);
+
             }
-
-            CRArchiveUpdater.updateCRArchive(changelog, version, attachmentList);
-
         }
-
-    }}
+    }
 
     @Override
-    public void onMessageReactionAdd(@NotNull MessageReactionAddEvent event) {
-        if (event.getEmoji().equals(HEART))
-            System.out.println("A user loved a message!");
+    public void onSlashCommandInteraction(SlashCommandInteractionEvent event)
+    {
+        // Only accept commands from guilds
+        if (event.getGuild() == null)
+            return;
+        switch (event.getName())
+        {
+            case "archive":
+                archive(event);
+                break;
+            default:
+                event.reply("I can't handle that command right now :(").setEphemeral(true).queue();
+        }
+    }
+
+    public void archive(SlashCommandInteractionEvent event) {
+        event.deferReply(false).queue(); // Let the user know we received the command before doing anything else
+        InteractionHook hook = event.getHook(); // This is a special webhook that allows you to send messages without having permissions in the channel and also allows ephemeral messages
+
+        hook.sendMessage("Checking versions").queue();
+        hook.sendMessage("Checking versions craaaab").queue();
+
+        hook.editOriginal("HHiiyya craab").queue();
+
     }
 
 //    [Puzzle HQ] [#cosmic-reach-announcements] Puzzle Testing Server #annv2: @test  **Cosmic Reach 0.4.13 is out!**
@@ -122,5 +165,6 @@ public class DiscordBot extends ListenerAdapter {
 //- Fixed bug where friendly interceptors would attack ghost entities
 //- Removed corn kernels from interceptor loot
 //    image.png : https://cdn.discordapp.com/attachments/1399940979259216013/1399941923875061780/image.png?ex=688ad504&is=68898384&hm=6325ea1e7771d4b2758a9443721d0020d871e5dc4f2875df06c3a6ac5db0c81a& : net.dv8tion.jda.api.utils.NamedAttachmentProxy@622412e5 : https://media.discordapp.net/attachments/1399940979259216013/1399941923875061780/image.png?ex=688ad504&is=68898384&hm=6325ea1e7771d4b2758a9443721d0020d871e5dc4f2875df06c3a6ac5db0c81a&
+
 
 }
