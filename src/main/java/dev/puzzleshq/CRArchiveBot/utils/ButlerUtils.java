@@ -79,8 +79,9 @@ public class ButlerUtils {
     }
 
 
-
     public static Path installButler() {
+        Path path = Constants.downloadPath.resolve("butler/").toAbsolutePath();
+        if (Files.exists(path.resolve("butler.exe"))) return path;
         try {
             return downloadButler();
         } catch (IOException e) {
@@ -91,7 +92,7 @@ public class ButlerUtils {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         System.out.println("Running Butler...");
-        ProcessBuilder pb = new ProcessBuilder(installButler().toString(), "status", ".", "finalforeach/cosmic-reach:windows", "--json");
+        ProcessBuilder pb = new ProcessBuilder(installButler().resolve("butler.exe").toString(), "status", "finalforeach/cosmic-reach", "--json");
         pb.redirectErrorStream(true);
         Process process = pb.start();
 

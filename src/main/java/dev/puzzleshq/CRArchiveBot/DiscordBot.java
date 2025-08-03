@@ -2,7 +2,6 @@ package dev.puzzleshq.CRArchiveBot;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
-import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -10,12 +9,9 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.unions.MessageChannelUnion;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.events.message.react.MessageReactionAddEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
-import net.dv8tion.jda.api.interactions.InteractionHook;
 import net.dv8tion.jda.api.interactions.commands.DefaultMemberPermissions;
-import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
@@ -23,22 +19,25 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static dev.puzzleshq.CRArchiveBot.Constants.channelID;
 import static dev.puzzleshq.CRArchiveBot.Constants.serverID;
-import static org.eclipse.jetty.webapp.MetaData.Complete.True;
-import static org.kohsuke.github.ReactionContent.HEART;
+import static dev.puzzleshq.CRArchiveBot.utils.threads.LoadingMessage.runStepsSequentially;
 
 public class DiscordBot extends ListenerAdapter {
     private static final Logger logger = LoggerFactory.getLogger("Discord-bot");
+    public static final String[] SPINNER_FRAMES = {"|", "/", "⟋", "—", "⟍", "\\"};
 
-    public static void main(String[] args) throws IOException {
+    public static String gitVersion;
+    public static String itchVersion;
+    public static boolean mismatch;
+
+    public static void main(String[] args) {
         String token = System.getenv("TOKEN");
 
         EnumSet<GatewayIntent> intents = EnumSet.of(
@@ -68,9 +67,7 @@ public class DiscordBot extends ListenerAdapter {
                             // Can't use this in DMs, and in guilds the bot isn't in.
                             .setContexts(InteractionContextType.GUILD)
                             .setDefaultPermissions(DefaultMemberPermissions.DISABLED) // only admins should be able to use this command.
-            );
-
-            commands.queue();
+            ).queue();
 
             jda.getRestPing().queue(ping ->
                     System.out.println("Logged in with ping: " + ping)
@@ -83,7 +80,7 @@ public class DiscordBot extends ListenerAdapter {
             System.out.println("Guilds: " + jda.getGuildCache().size());
         } catch (InterruptedException e) {
             // Thrown if the awaitReady() call is interrupted
-            e.printStackTrace();
+            logger.trace(String.valueOf(e));
         }
     }
 
@@ -142,14 +139,52 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     public void archive(SlashCommandInteractionEvent event) {
-        event.deferReply(false).queue(); // Let the user know we received the command before doing anything else
-        InteractionHook hook = event.getHook(); // This is a special webhook that allows you to send messages without having permissions in the channel and also allows ephemeral messages
+        List<String> steps = List.of("Checking git", "Checking itch", "Downloading files", "Creating release", "Uploading files");
+        List<Boolean> completed = new ArrayList<>(Collections.nCopies(steps.size(), false));
 
-        hook.sendMessage("Checking versions").queue();
-        hook.sendMessage("Checking versions craaaab").queue();
+        event.deferReply().queue(hook -> hook.sendMessage("Preparing...").queue(message -> runStepsSequentially(steps, completed, message, 0)));
+    }
 
-        hook.editOriginal("HHiiyya craab").queue();
+    public static CompletableFuture<Void> checkGit() {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(2000);
+                gitVersion = "0.4.15";
+            } catch (InterruptedException ignored) {}
+        });
+    }
 
+    public static CompletableFuture<Void> checkItch() {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(1000);
+                itchVersion = "0.4.16";
+            } catch (InterruptedException ignored) {}
+        });
+    }
+
+    public static CompletableFuture<Void> downloadFiles() {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) {}
+        });
+    }
+
+    public static CompletableFuture<Void> createRelease() {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) {}
+        });
+    }
+
+    public static CompletableFuture<Void> uploadFiles() {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) {}
+        });
     }
 
 //    [Puzzle HQ] [#cosmic-reach-announcements] Puzzle Testing Server #annv2: @test  **Cosmic Reach 0.4.13 is out!**
