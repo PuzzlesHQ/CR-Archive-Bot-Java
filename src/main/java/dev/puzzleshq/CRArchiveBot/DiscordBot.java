@@ -153,7 +153,7 @@ public class DiscordBot extends ListenerAdapter {
         event.deferReply().queue(hook -> {
             hook.sendMessage("Preparing...").queue(message -> {
                 runStepsSequentially(steps, completed, message, 0)
-                        .whenComplete((__, ___) -> isRunning.set(false));  // release lock
+                        .whenComplete((_, _) -> isRunning.set(false));  // release lock
             });
         });
     }
@@ -172,7 +172,7 @@ public class DiscordBot extends ListenerAdapter {
         return CompletableFuture.runAsync(() -> {
             try {
                 Thread.sleep(1000);
-                itchVersion = "0.4.16";
+                itchVersion = "0.4.15";
             } catch (InterruptedException ignored) {}
         });
     }
