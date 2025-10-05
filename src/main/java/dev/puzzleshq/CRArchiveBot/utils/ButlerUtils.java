@@ -92,7 +92,7 @@ public class ButlerUtils {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         System.out.println("Running Butler...");
-        ProcessBuilder pb = new ProcessBuilder(installButler().resolve("butler.exe").toString(), "status", "finalforeach/cosmic-reach", "--json");
+        ProcessBuilder pb = new ProcessBuilder(installButler().resolve("butler.exe").toString(), "status", "finalforeach/cosmic-reach", "--json", "--verbose");
         pb.redirectErrorStream(true);
         Process process = pb.start();
 

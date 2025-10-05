@@ -19,8 +19,11 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.MatchResult;
 import java.util.regex.Pattern;
@@ -28,7 +31,6 @@ import java.util.stream.Collectors;
 
 import static dev.puzzleshq.CRArchiveBot.Constants.channelID;
 import static dev.puzzleshq.CRArchiveBot.Constants.serverID;
-import static dev.puzzleshq.CRArchiveBot.utils.threads.LoadingMessage.runStepsSequentially;
 
 public class DiscordBot extends ListenerAdapter {
     private static final Logger logger = LoggerFactory.getLogger("Discord-bot");
@@ -126,13 +128,11 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     @Override
-    public void onSlashCommandInteraction(SlashCommandInteractionEvent event)
-    {
+    public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
         // Only accept commands from guilds
         if (event.getGuild() == null)
             return;
-        switch (event.getName())
-        {
+        switch (event.getName()) {
             case "archive":
                 archive(event);
                 break;
@@ -150,12 +150,12 @@ public class DiscordBot extends ListenerAdapter {
         List<String> steps = List.of("Checking git", "Checking itch", "Downloading files", "Creating release", "Uploading files");
         List<Boolean> completed = new ArrayList<>(Collections.nCopies(steps.size(), false));
 
-        event.deferReply().queue(hook -> {
-            hook.sendMessage("Preparing...").queue(message -> {
-                runStepsSequentially(steps, completed, message, 0)
-                        .whenComplete((_, _) -> isRunning.set(false));  // release lock
-            });
-        });
+//        event.deferReply().queue(hook -> {
+//            hook.sendMessage("Preparing...").queue(message -> {
+//                runStepsSequentially(steps, completed, message, 0)
+//                        .whenComplete((_, _) -> isRunning.set(false));  // release lock
+//            });
+//        });
     }
 
 
@@ -164,7 +164,8 @@ public class DiscordBot extends ListenerAdapter {
             try {
                 Thread.sleep(2000);
                 gitVersion = "0.4.15";
-            } catch (InterruptedException ignored) {}
+            } catch (InterruptedException ignored) {
+            }
         });
     }
 
@@ -173,7 +174,8 @@ public class DiscordBot extends ListenerAdapter {
             try {
                 Thread.sleep(1000);
                 itchVersion = "0.4.15";
-            } catch (InterruptedException ignored) {}
+            } catch (InterruptedException ignored) {
+            }
         });
     }
 
@@ -181,7 +183,8 @@ public class DiscordBot extends ListenerAdapter {
         return CompletableFuture.runAsync(() -> {
             try {
                 Thread.sleep(2000);
-            } catch (InterruptedException ignored) {}
+            } catch (InterruptedException ignored) {
+            }
         });
     }
 
@@ -189,7 +192,8 @@ public class DiscordBot extends ListenerAdapter {
         return CompletableFuture.runAsync(() -> {
             try {
                 Thread.sleep(2000);
-            } catch (InterruptedException ignored) {}
+            } catch (InterruptedException ignored) {
+            }
         });
     }
 
@@ -197,7 +201,8 @@ public class DiscordBot extends ListenerAdapter {
         return CompletableFuture.runAsync(() -> {
             try {
                 Thread.sleep(2000);
-            } catch (InterruptedException ignored) {}
+            } catch (InterruptedException ignored) {
+            }
         });
     }
 

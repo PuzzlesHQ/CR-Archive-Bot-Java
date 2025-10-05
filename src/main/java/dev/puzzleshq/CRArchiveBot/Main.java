@@ -1,6 +1,5 @@
 package dev.puzzleshq.CRArchiveBot;
 
-import dev.puzzleshq.CRArchiveBot.utils.GithubUtils;
 import dev.puzzleshq.CRArchiveBot.utils.VersionsJsonUtils;
 
 public class Main {
@@ -11,6 +10,7 @@ public class Main {
 //        GithubReleaseUtils.deleteAllReleases(GithubUtils.getTestArchive());
 //        GithubReleaseUtils.copyAllReleases(GithubUtils.getMainArchive(), GithubUtils.getTestArchive());
 //        VersionsJsonUtils.fixVersionsJson();
+//        VersionsJsonUtils.main(args);
     }
 
 }

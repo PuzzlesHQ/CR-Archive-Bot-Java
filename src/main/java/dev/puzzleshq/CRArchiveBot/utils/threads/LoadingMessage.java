@@ -1,7 +1,6 @@
 package dev.puzzleshq.CRArchiveBot.utils.threads;
 
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.exceptions.ErrorResponseException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,14 +64,26 @@ public class LoadingMessage {
 
     private static CompletableFuture<Void> runActualStep(int stepIndex, List<Boolean> completed) {
         switch (stepIndex) {
-            case 0: return checkGit();
-            case 1: return checkItch();
-            case 2: if (!Objects.equals(itchVersion, gitVersion)) {return downloadFiles();} else {completed.set(2, true);completed.set(3, true);completed.set(4, true);
-                mismatch = true;
-                return CompletableFuture.completedFuture(null);}
-            case 3: return createRelease();
-            case 4: return uploadFiles();
-            default: return CompletableFuture.completedFuture(null);
+            case 0:
+                return checkGit();
+            case 1:
+                return checkItch();
+            case 2:
+                if (!Objects.equals(itchVersion, gitVersion)) {
+                    return downloadFiles();
+                } else {
+                    completed.set(2, true);
+                    completed.set(3, true);
+                    completed.set(4, true);
+                    mismatch = true;
+                    return CompletableFuture.completedFuture(null);
+                }
+            case 3:
+                return createRelease();
+            case 4:
+                return uploadFiles();
+            default:
+                return CompletableFuture.completedFuture(null);
         }
     }
 }

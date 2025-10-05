@@ -21,7 +21,7 @@ public class FileUtils {
         }
     }
 
-    public static String getInternalFileAsString_US_ASCII (String fileName) throws IOException {
+    public static String getInternalFileAsString_US_ASCII(String fileName) throws IOException {
         return IOUtils.toString(FileUtils.getInternalFile(fileName), StandardCharsets.US_ASCII); //US_ASCII
     }
 

@@ -8,7 +8,7 @@ public class FormatConverterUtils {
     static Pattern devVersion = Pattern.compile("(?<=\\d)(?=[a-z])");
     static Pattern blueOrRed = Pattern.compile("blue|red");
 
-    public static String convertFormat(String format){
+    public static String convertFormat(String format) {
         String[] split = format.split("-");
 
         String versionBad = split[0];
@@ -18,9 +18,9 @@ public class FormatConverterUtils {
         String phase;
 
         if (blueOrRed.matcher(split[1]).find()) {
-            versionBad += "."+split[1];
+            versionBad += "." + split[1];
             phase = split[2];
-        }else if (split.length == 3) {
+        } else if (split.length == 3) {
             pre = split[1];
             phase = split[2];
         } else {
@@ -51,7 +51,7 @@ public class FormatConverterUtils {
         return sb.toString();
     }
 
-    public static String convertFileNameFormat(String fileName){
+    public static String convertFileNameFormat(String fileName) {
         String newFileName = fileName.replaceAll(fileNameStripper.pattern(), "");
         StringBuilder sb = new StringBuilder();
         if (fileName.contains("server")) {

@@ -15,24 +15,138 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import static dev.puzzleshq.CRArchiveBot.utils.GithubUtils.getArchive;
 
 public class GithubReleaseUtils {
     private static final Logger logger = LoggerFactory.getLogger("GithubReleaseUtils");
 
-    public static boolean makeNewRelease(){
-//        GithubUtils.getArchive().createRelease()
+    public static boolean makeNewRelease(String tag, String releaseName, String releaseBody, List<Path> assets) {
+        GHRelease ghRelease = makeRelease(tag, releaseName, releaseBody);
+
+        GithubAssetsUtils.uploadAssets(ghRelease, assets);
+
+
         return true;
     }
 
+    public static GHRelease makeRelease(String tag, String releaseName, String releaseBody) {
+        try {
+            return GithubUtils.getArchive().createRelease(tag)
+                    .name(releaseName)
+                    .body(releaseBody)
+                    .create();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    //TODO make this
+    public static void renameRelease() {
+
+    }
+
+    public static GHRelease updateRelease(GHRelease release, String tag, String releaseName) {
+        try {
+            String oldTag = release.getTagName();
+            GHRelease newRelease = release.update()
+                    .tag(tag)
+                    .name(releaseName)
+                    .update();
+
+            if (!Objects.equals(oldTag, tag)) {
+                Objects.requireNonNull(getArchive()).getRef("tags/" + oldTag).delete();
+            }
+            return newRelease;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static GHRelease copyRelease(GHRelease release) {
+        return copyRelease(release, Objects.requireNonNull(getArchive()));
+    }
+
+    public static GHRelease copyRelease(GHRelease release, GHRepository to) {
+        try {
+            GHRelease newRelease = to.createRelease(release.getTagName())
+                    .name(release.getName())
+                    .body(release.getBody())
+                    .create();
+
+            release.getAssets().forEach(asset -> {
+                try {
+                    Path assetPath = GithubAssetUtils.downloadGHAsset(asset);
+                    newRelease.uploadAsset(assetPath.toFile(), asset.getContentType());
+                    assetPath.toFile().delete();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            return newRelease;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void copyAllReleases(GHRepository from, GHRepository to) {
+        logger.info("Starting copying of releases");
+        from.listReleases().forEach(ghRelease -> {
+            logger.info("copying release: {} to: {}", ghRelease.getName(), to.getFullName());
+            copyRelease(ghRelease, to);
+        });
+        logger.info("Finished copying of releases");
+    }
+
+    public static void deleteAllReleases(GHRepository from) {
+        try {
+            logger.info("Start deleting all releases");
+            from.listReleases().toList().forEach(GithubReleaseUtils::deleteReleases);
+            logger.info("Finished deleting all releases");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void deleteReleases(GHRelease ghRelease) {
+        try {
+            logger.info("Deleting release {}", ghRelease.getName());
+            ghRelease.delete();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void deleteReleaseAndTag(GHRelease release) {
+        try {
+            String oldTag = release.getTagName();
+            release.delete();
+            Objects.requireNonNull(getArchive()).getRef("tags/" + oldTag).delete();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static List<GHRelease> listRelease() {
+        try {
+            return getArchive().listReleases().toList();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     //TODO make a renameRelease
-    public static void renameAllReleases(){
+    public static void renameAllReleases() {
         logger.info("Starting renaming");
         //old version.  new version, new jar name server/client
         Map<String, Pair<String, Pair<String, String>>> renamer = new HashMap<>();
 
         logger.info("Start renaming of releases");
-        GithubUtils.getArchive().listReleases().forEach(ghRelease -> {
+        getArchive().listReleases().forEach(ghRelease -> {
             logger.info("Renaming release: {}", ghRelease.getName());
 
             String version = FormatConverterUtils.convertFormat(ghRelease.getTagName());
@@ -68,7 +182,7 @@ public class GithubReleaseUtils {
 
             renamer.put(ghRelease.getTagName(), new Pair<>(version, fileNames));
 
-            GHRelease release = GithubUtils.updateRelease(ghRelease, version, releaseName);
+            GHRelease release = updateRelease(ghRelease, version, releaseName);
 
             assets.forEach((path, contentType) -> {
                 try {
@@ -87,13 +201,13 @@ public class GithubReleaseUtils {
 
         GHContent ghContent = GithubFileUtils.getFile("versions.json");
         JsonObject json = GithubFileUtils.getFileAsJson(ghContent).asObject();
-        JsonArray versions  = json.get("versions").asArray();
+        JsonArray versions = json.get("versions").asArray();
 
         versions.forEach(version -> {
             logger.info("Updating version: {}", version.asObject().get("id"));
             JsonObject jsonObject = version.asObject();
             Pair<String, Pair<String, String>> stuff = renamer.get(jsonObject.get("id").asString());
-            if (stuff != null){
+            if (stuff != null) {
                 jsonObject.set("id", stuff.getLeft());
 
                 JsonValue clientValue = jsonObject.get("client");
@@ -118,7 +232,7 @@ public class GithubReleaseUtils {
     }
 
     private static void updateUrlJson(String version, String fileName, JsonValue value) {
-        if (value != null){
+        if (value != null) {
             JsonObject JsonObject = value.asObject();
             String url = JsonObject.get("url").asString();
             String[] splitUrl = url.split("/");
@@ -131,39 +245,6 @@ public class GithubReleaseUtils {
             }
 
             JsonObject.set("url", builder.toString());
-        }
-    }
-
-    //TODO make this
-    public static void renameRelease() {
-
-    }
-
-    public static void copyAllReleases(GHRepository from, GHRepository to) {
-        logger.info("Starting copying of releases");
-        from.listReleases().forEach(ghRelease -> {
-            logger.info("copying release: {} to: {}", ghRelease.getName(),  to.getFullName());
-            GithubUtils.copyRelease(ghRelease, to);
-        });
-        logger.info("Finished copying of releases");
-    }
-
-    public static void deleteAllReleases(GHRepository from) {
-        try {
-            logger.info("Start deleting all releases");
-            from.listReleases().toList().forEach(GithubReleaseUtils::deleteReleases);
-            logger.info("Finished deleting all releases");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void deleteReleases(GHRelease ghRelease) {
-        try {
-            logger.info("Deleting release {}", ghRelease.getName());
-            ghRelease.delete();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 

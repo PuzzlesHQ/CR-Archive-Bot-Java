@@ -6,13 +6,12 @@ import java.util.List;
 
 public class CRArchiveUpdater {
 
-    public static void updateCRArchive(String changelog, String version, List<Message.Attachment> imageList){
-        if (checkForUpdates()){
-            // get info
-            getChangelog();
+    public static void updateCRArchive(String changelog, String version, List<Message.Attachment> imageList) {
+        if (checkForUpdates()) {
+            imageList.getFirst().getUrl();
 
             // make release
-            GithubReleaseUtils.makeNewRelease();
+//            GithubReleaseUtils.makeNewRelease();
         }
     }
 
@@ -22,6 +21,17 @@ public class CRArchiveUpdater {
 
     public static boolean getChangelog() {
         return false;
+        /*
+         * ![](https://img.itch.zone/aW1nLzIyODc1MzM4LnBuZw==/original/h9TOi%2B.png)
+         * <p>
+         * - Added brick variants for Sandstone, Basalt, Gabbro, and Limestone
+         * - Added the Remote Control, which is an item that can rename drones
+         *   - In future updates, it will be able to change drone's behaviours
+         * - Potential fix for the crash when you pick up items
+         * - Fixed water being invisible in inventory
+         * - Fixed multiplayer crashing when breaking a missing block
+         * - Fixed multiplayer crashing when hitting the planteater
+         */
     }
 
 //    headers = {
@@ -37,7 +47,7 @@ public class CRArchiveUpdater {
     //            throw new IllegalStateException("DISCORD_TOKEN not set");
     //        }
 
-    public static boolean getVersionJar(){
+    public static boolean getVersionJar() {
         return true;
     }
 }
