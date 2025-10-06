@@ -240,6 +240,34 @@ public class VersionsJsonUtils {
         return versionPair.getLeft() + phase + (versionPair.getRight() != null ? "+" + versionPair.getRight() : "");
     }
 
+    public static JsonObject getSideEntry(String version, String side, Path jarPath){
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.add("url", "https://github.com/PuzzlesHQ/CRArchive/releases/download/" + version + "/cosmic-reach-" + side + "-" + version + ".jar");
+        jsonObject.add("sha256", getSha256(jarPath));
+        jsonObject.add("size", getFileSize(jarPath));
+        return jsonObject;
+    }
+
+    public static JsonObject getVersionJsonEntry(Path clientPath, Path serverPath){
+        String version = getVersion(clientPath);
+        String phase = getPhase(clientPath);
+        long releaseTime = getTimeStamp(clientPath);
+
+        JsonObject client = getSideEntry(version, "client", clientPath);
+        JsonObject server = getSideEntry(version, "server", serverPath);
+
+        JsonObject versionEntry = new JsonObject();
+        versionEntry.add("id", version);
+        versionEntry.add("type", "release");
+        versionEntry.add("phase", phase);
+        versionEntry.add("releaseTime", releaseTime);
+        versionEntry.add("client", client);
+        versionEntry.add("server", server);
+
+
+        return versionEntry;
+    }
+
     // adds any versions it fines in the release that are not in the versions.json
     public static void main(String[] args) {
 //        GithubUtils.init();
@@ -251,9 +279,13 @@ public class VersionsJsonUtils {
 
 
         String home = System.getProperty("user.home");
-        Path path = Path.of(home, ".config/itch/apps/cosmic-reach 2/Cosmic-Reach-0.5.2.jar");
+        Path clientPath = Path.of(home, "/Projects/cosmic_reach/puzzle/CR-Archive-Bot-Java/downloads/cosmic-reach-client-0.5.5-alpha.jar");
+        Path serverPath = Path.of(home, "/Projects/cosmic_reach/puzzle/CR-Archive-Bot-Java/downloads/cosmic-reach-server-0.5.5-alpha.jar");
 
-        System.out.println(getPhase(path));
+        JsonObject versionsJson = getVersionJsonEntry(clientPath, serverPath);
+
+        System.out.println(versionsJson.toString(Stringify.FORMATTED));
+
 
 //        boolean a = true;
 //        for (GHRelease release : releaseList) {
