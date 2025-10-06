@@ -1,5 +1,6 @@
 package dev.puzzleshq.CRArchiveBot.utils;
 
+import com.github.villadora.semver.SemVer;
 import org.hjson.JsonArray;
 import org.hjson.JsonObject;
 import org.hjson.JsonValue;
@@ -19,6 +20,8 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class VersionsJsonUtils {
 
@@ -179,7 +182,7 @@ public class VersionsJsonUtils {
         return sb.toString();
     }
 
-    public static String getVersion(Path path){
+    public static String getRawVersion(Path path){
         File jarFile = path.toFile();
         String versionTXT = "build_assets/version.txt";
 
@@ -193,6 +196,48 @@ public class VersionsJsonUtils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static String getPhase(Path path){
+        String rawVersion = getRawVersion(path);
+        Pair<String, String> versionPair = getVersionPair(rawVersion);
+
+        return getVersionPhase(versionPair.getLeft());
+    }
+
+    public static Pair<String, String> getVersionPair(String rawVersion){
+        Pattern pattern = Pattern.compile("^([0-9.]+)([a-zA-Z]*)$");
+        Matcher matcher = pattern.matcher(rawVersion);
+
+        String checkVersion;
+        String devVersion = null;
+
+        if (!matcher.matches()) {
+            checkVersion = matcher.group(1);
+            devVersion = matcher.group(2);
+        } else {
+            checkVersion = rawVersion;
+        }
+
+        return new Pair<>(checkVersion, devVersion);
+    }
+
+    public static String getVersionPhase(String checkVersion){
+        if (SemVer.gt("0.3.27", checkVersion)){
+            return  "-pre_alpha";
+        } else {
+            return"-alpha";
+        }
+    }
+
+    public static String getVersion(Path path){
+        String rawVersion = getRawVersion(path);
+
+        Pair<String, String> versionPair = getVersionPair(rawVersion);
+
+        String phase = getVersionPhase(versionPair.getLeft());
+
+        return versionPair.getLeft() + phase + (versionPair.getRight() != null ? "+" + versionPair.getRight() : "");
     }
 
     // adds any versions it fines in the release that are not in the versions.json

@@ -42,6 +42,8 @@ dependencies {
         transitive = false
     }
 
+    implementation "com.github.villadora:semver:$semver_version"
+
     implementation("net.dv8tion:JDA:$JDA_version")
     compileOnly "org.jetbrains:annotations:$jetbrains_annotations"
 }
