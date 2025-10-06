@@ -202,7 +202,7 @@ public class VersionsJsonUtils {
         String rawVersion = getRawVersion(path);
         Pair<String, String> versionPair = getVersionPair(rawVersion);
 
-        return getVersionPhase(versionPair.getLeft());
+        return getVersionPhase(versionPair.getLeft()).replaceAll("-", "");
     }
 
     public static Pair<String, String> getVersionPair(String rawVersion){
@@ -253,7 +253,7 @@ public class VersionsJsonUtils {
         String home = System.getProperty("user.home");
         Path path = Path.of(home, ".config/itch/apps/cosmic-reach 2/Cosmic-Reach-0.5.2.jar");
 
-        System.out.println(getVersion(path));
+        System.out.println(getPhase(path));
 
 //        boolean a = true;
 //        for (GHRelease release : releaseList) {
